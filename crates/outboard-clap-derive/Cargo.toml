@@ -1,0 +1,19 @@
+[package]
+name = "outboard-clap-derive"
+description = "Derive macros for typed clap-to-argv serialization in Outboard"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn.workspace = true
+quote.workspace = true
+proc-macro2.workspace = true
+proc-macro-crate.workspace = true
+
+[lints]
+workspace = true

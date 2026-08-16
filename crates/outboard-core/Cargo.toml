@@ -1,0 +1,17 @@
+[package]
+name = "outboard-core"
+description = "Core discovery, manifests, compatibility, and process primitives for Outboard"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+schemars.workspace = true
+semver.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,18 @@
+[package]
+name = "outboard-protocol"
+description = "Versioned framed worker protocol for Outboard plugins"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+outboard-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+schemars.workspace = true
+semver.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

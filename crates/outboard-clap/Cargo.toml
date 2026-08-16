@@ -1,0 +1,18 @@
+[package]
+name = "outboard-clap"
+description = "Typed clap argv serialization, schemas, and plugin-management commands for Outboard"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+outboard.workspace = true
+outboard-clap-derive.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+schemars.workspace = true
+
+[lints]
+workspace = true

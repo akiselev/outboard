@@ -1,0 +1,17 @@
+[package]
+name = "outboard"
+description = "Cargo-style typed executable plugins for Rust CLIs"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+outboard-core.workspace = true
+outboard-protocol.workspace = true
+serde_json.workspace = true
+semver.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

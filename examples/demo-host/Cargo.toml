@@ -1,0 +1,24 @@
+[package]
+name = "outboard-demo-host"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "outboard-demo"
+path = "src/main.rs"
+
+[dependencies]
+clap.workspace = true
+outboard.workspace = true
+outboard-clap.workspace = true
+outboard-testing.workspace = true
+outboard-tokio.workspace = true
+outboard-demo-api = { path = "../demo-api" }
+serde_json.workspace = true
+tokio.workspace = true
+
+[lints]
+workspace = true
