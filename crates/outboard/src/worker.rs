@@ -9,12 +9,12 @@ use std::{
 };
 
 use outboard_core::{
-    ExecutionMode, InterfaceId, InterfaceRequirement, Manifest, ResolvedPlugin,
-    OUTBOARD_FRAMEWORK_VERSION, OUTBOARD_PROTOCOL_VERSION,
+    ExecutionMode, InterfaceId, InterfaceRequirement, Manifest, OUTBOARD_FRAMEWORK_VERSION,
+    OUTBOARD_PROTOCOL_VERSION, ResolvedPlugin,
 };
 use outboard_protocol::{
-    FrameError, FramedReader, FramedWriter, HostFrame, HostHello, InvocationResult,
-    InvokeRequest, Payload, PluginFrame, PluginHello, RequestId, WireOsString, WorkerError,
+    FrameError, FramedReader, FramedWriter, HostFrame, HostHello, InvocationResult, InvokeRequest,
+    Payload, PluginFrame, PluginHello, RequestId, WireOsString, WorkerError,
 };
 use semver::Version;
 use thiserror::Error;
@@ -76,11 +76,7 @@ impl WorkerClient {
         plugin: &ResolvedPlugin,
         requested_interfaces: Vec<InterfaceRequirement>,
     ) -> Result<Self, WorkerClientError> {
-        Self::spawn_with_interfaces_timeout(
-            plugin,
-            requested_interfaces,
-            DEFAULT_CONTROL_TIMEOUT,
-        )
+        Self::spawn_with_interfaces_timeout(plugin, requested_interfaces, DEFAULT_CONTROL_TIMEOUT)
     }
 
     pub fn spawn_with_interfaces_timeout(
@@ -101,8 +97,14 @@ impl WorkerClient {
             .stderr(Stdio::inherit());
 
         let mut child = command.spawn().map_err(WorkerClientError::Spawn)?;
-        let stdin = child.stdin.take().expect("worker stdin was configured as piped");
-        let stdout = child.stdout.take().expect("worker stdout was configured as piped");
+        let stdin = child
+            .stdin
+            .take()
+            .expect("worker stdin was configured as piped");
+        let stdout = child
+            .stdout
+            .take()
+            .expect("worker stdout was configured as piped");
         let mut writer = FramedWriter::new(BufWriter::new(stdin));
 
         let (reader_tx, reader_rx) = mpsc::channel();
@@ -208,7 +210,10 @@ impl WorkerClient {
                 Ok(Err(error)) => return Err(WorkerClientError::Frame(error)),
             };
             match frame {
-                PluginFrame::Finished { id: frame_id, result } if frame_id == id => {
+                PluginFrame::Finished {
+                    id: frame_id,
+                    result,
+                } if frame_id == id => {
                     events.push(PluginFrame::Finished {
                         id: frame_id,
                         result: result.clone(),

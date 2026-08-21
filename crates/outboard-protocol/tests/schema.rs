@@ -1,1 +1,8 @@
-use outboard_protocol::{host_frame_schema,plugin_frame_schema};#[test]fn schemas_are_objects(){let h=serde_json::to_value(host_frame_schema()).unwrap();let p=serde_json::to_value(plugin_frame_schema()).unwrap();assert!(h.is_object());assert!(p.is_object())}
+use outboard_protocol::{host_frame_schema, plugin_frame_schema};
+#[test]
+fn schemas_are_objects() {
+    let h = serde_json::to_value(host_frame_schema()).unwrap();
+    let p = serde_json::to_value(plugin_frame_schema()).unwrap();
+    assert!(h.is_object());
+    assert!(p.is_object())
+}

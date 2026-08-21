@@ -1,4 +1,49 @@
-use outboard_core::{Capability,CapabilityRequirement,ExecutionMode,InterfaceManifest,InterfaceRequirement,ManifestBuilder,PluginId,PluginRequirement};use semver::{Version,VersionReq};
-fn manifest()->outboard_core::Manifest{ManifestBuilder::new(PluginId::new("app","engine","test").unwrap(),Version::parse("2.3.4").unwrap()).interface(InterfaceManifest::new("app.engine",Version::parse("1.4.0").unwrap()).unwrap()).capability(Capability::new("device.cpu").unwrap().property("threads",8)).execution([ExecutionMode::OneShot,ExecutionMode::Worker]).build().unwrap()}
-#[test]fn compatible(){let r=PluginRequirement::new("engine").unwrap().named("test").unwrap().interface(InterfaceRequirement::new("app.engine",VersionReq::parse("^1").unwrap()).unwrap()).capability(CapabilityRequirement::new("device.cpu").unwrap().property("threads",8)).execution(ExecutionMode::Worker);assert!(manifest().compatibility_issues(&r).is_empty())}
-#[test]fn reports_multiple(){let r=PluginRequirement::new("engine").unwrap().named("wrong").unwrap().interface(InterfaceRequirement::new("app.engine",VersionReq::parse("^2").unwrap()).unwrap()).capability(CapabilityRequirement::new("device.gpu").unwrap());assert_eq!(manifest().compatibility_issues(&r).len(),3)}
+use outboard_core::{
+    Capability, CapabilityRequirement, ExecutionMode, InterfaceManifest, InterfaceRequirement,
+    ManifestBuilder, PluginId, PluginRequirement,
+};
+use semver::{Version, VersionReq};
+fn manifest() -> outboard_core::Manifest {
+    ManifestBuilder::new(
+        PluginId::new("app", "engine", "test").unwrap(),
+        Version::parse("2.3.4").unwrap(),
+    )
+    .interface(InterfaceManifest::new("app.engine", Version::parse("1.4.0").unwrap()).unwrap())
+    .capability(
+        Capability::new("device.cpu")
+            .unwrap()
+            .property("threads", 8),
+    )
+    .execution([ExecutionMode::OneShot, ExecutionMode::Worker])
+    .build()
+    .unwrap()
+}
+#[test]
+fn compatible() {
+    let r = PluginRequirement::new("engine")
+        .unwrap()
+        .named("test")
+        .unwrap()
+        .interface(
+            InterfaceRequirement::new("app.engine", VersionReq::parse("^1").unwrap()).unwrap(),
+        )
+        .capability(
+            CapabilityRequirement::new("device.cpu")
+                .unwrap()
+                .property("threads", 8),
+        )
+        .execution(ExecutionMode::Worker);
+    assert!(manifest().compatibility_issues(&r).is_empty())
+}
+#[test]
+fn reports_multiple() {
+    let r = PluginRequirement::new("engine")
+        .unwrap()
+        .named("wrong")
+        .unwrap()
+        .interface(
+            InterfaceRequirement::new("app.engine", VersionReq::parse("^2").unwrap()).unwrap(),
+        )
+        .capability(CapabilityRequirement::new("device.gpu").unwrap());
+    assert_eq!(manifest().compatibility_issues(&r).len(), 3)
+}

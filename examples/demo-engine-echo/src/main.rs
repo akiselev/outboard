@@ -1,7 +1,125 @@
-use std::{ffi::OsString,sync::Arc,time::Duration};use async_trait::async_trait;use clap::Parser;use outboard::{Capability,ControlCapabilities,ControlDispatch,ControlDispatcher,DoctorCheck,DoctorReport,ExecutionMode,InvocationResult,InvokeRequest,Manifest,ManifestBuilder,Payload,PluginId,WorkerError};use outboard_clap::cli_schema_value;use outboard_demo_api::{DelayArgs,EchoArgs,EngineCli,EngineCommand,interface_manifest,run_echo};use outboard_tokio::{AsyncWorkerHandler,InvocationContext};use semver::Version;
-fn manifest()->Manifest{ManifestBuilder::new(PluginId::new("outboard-demo","engine","echo").unwrap(),Version::parse(env!("CARGO_PKG_VERSION")).unwrap()).description("Reference Outboard demo plugin").interface(interface_manifest()).capability(Capability::new("demo.progress").unwrap()).capability(Capability::new("demo.cancellation").unwrap()).execution([ExecutionMode::OneShot,ExecutionMode::Worker]).control(ControlCapabilities{doctor:true,cli_schema:true,ping:true}).build().unwrap()}
-#[tokio::main]async fn main()->Result<(),Box<dyn std::error::Error>>{let manifest=manifest();match ControlDispatcher::new(&manifest).doctor(||DoctorReport::from_checks(vec![DoctorCheck::pass("runtime",format!("pid {} is healthy",std::process::id())),DoctorCheck::pass("demo","echo and delay commands available")])).cli_schema(cli_schema_value::<EngineCli>).dispatch_from_env()?{ControlDispatch::Handled=>return Ok(()),ControlDispatch::Serve=>{outboard_tokio::serve_worker(manifest,Arc::new(DemoHandler)).await?;return Ok(())},ControlDispatch::NotControl=>{}}let cli=EngineCli::parse();match cli.command{EngineCommand::Echo(a)=>println!("{}",serde_json::to_string(&run_echo(&a))?),EngineCommand::Delay(a)=>{tokio::time::sleep(Duration::from_millis(a.milliseconds)).await;println!("{}",serde_json::json!({"result":a.result,"process_id":std::process::id()}))}}Ok(())}
+use async_trait::async_trait;
+use clap::Parser;
+use outboard::{
+    Capability, ControlCapabilities, ControlDispatch, ControlDispatcher, DoctorCheck, DoctorReport,
+    ExecutionMode, InvocationResult, InvokeRequest, Manifest, ManifestBuilder, Payload, PluginId,
+    WorkerError,
+};
+use outboard_clap::cli_schema_value;
+use outboard_demo_api::{
+    DelayArgs, EchoArgs, EngineCli, EngineCommand, interface_manifest, run_echo,
+};
+use outboard_tokio::{AsyncWorkerHandler, InvocationContext};
+use semver::Version;
+use std::{ffi::OsString, sync::Arc, time::Duration};
+fn manifest() -> Manifest {
+    ManifestBuilder::new(
+        PluginId::new("outboard-demo", "engine", "echo").unwrap(),
+        Version::parse(env!("CARGO_PKG_VERSION")).unwrap(),
+    )
+    .description("Reference Outboard demo plugin")
+    .interface(interface_manifest())
+    .capability(Capability::new("demo.progress").unwrap())
+    .capability(Capability::new("demo.cancellation").unwrap())
+    .execution([ExecutionMode::OneShot, ExecutionMode::Worker])
+    .control(ControlCapabilities {
+        doctor: true,
+        cli_schema: true,
+        ping: true,
+    })
+    .build()
+    .unwrap()
+}
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let manifest = manifest();
+    match ControlDispatcher::new(&manifest)
+        .doctor(|| {
+            DoctorReport::from_checks(vec![
+                DoctorCheck::pass("runtime", format!("pid {} is healthy", std::process::id())),
+                DoctorCheck::pass("demo", "echo and delay commands available"),
+            ])
+        })
+        .cli_schema(cli_schema_value::<EngineCli>)
+        .dispatch_from_env()?
+    {
+        ControlDispatch::Handled => return Ok(()),
+        ControlDispatch::Serve => {
+            outboard_tokio::serve_worker(manifest, Arc::new(DemoHandler)).await?;
+            return Ok(());
+        }
+        ControlDispatch::NotControl => {}
+    }
+    let cli = EngineCli::parse();
+    match cli.command {
+        EngineCommand::Echo(a) => println!("{}", serde_json::to_string(&run_echo(&a))?),
+        EngineCommand::Delay(a) => {
+            tokio::time::sleep(Duration::from_millis(a.milliseconds)).await;
+            println!(
+                "{}",
+                serde_json::json!({"result":a.result,"process_id":std::process::id()})
+            )
+        }
+    }
+    Ok(())
+}
 struct DemoHandler;
-#[async_trait]impl AsyncWorkerHandler for DemoHandler{async fn invoke(&self,context:InvocationContext,request:InvokeRequest)->Result<InvocationResult,WorkerError>{let args=request.args.into_iter().map(|a|a.into_os().map_err(|e|WorkerError::new("argv",e.to_string()))).collect::<Result<Vec<OsString>,WorkerError>>()?;let mut argv=vec![OsString::from("demo-engine"),OsString::from(&request.command)];argv.extend(args);let cli=EngineCli::try_parse_from(argv).map_err(|e|WorkerError::new("clap",e.to_string()))?;match cli.command{EngineCommand::Echo(a)=>worker_echo(&context,&a),EngineCommand::Delay(a)=>worker_delay(context,a).await}}}
-fn worker_echo(context:&InvocationContext,args:&EchoArgs)->Result<InvocationResult,WorkerError>{context.progress(Some(0.5),Some("echoing".into()))?;let result=run_echo(args);context.output(Payload::Json(serde_json::to_value(&result).map_err(|e|WorkerError::new("json",e.to_string()))?))?;context.progress(Some(1.0),Some("complete".into()))?;Ok(InvocationResult::success(serde_json::to_value(result).map_err(|e|WorkerError::new("json",e.to_string()))?))}
-async fn worker_delay(context:InvocationContext,args:DelayArgs)->Result<InvocationResult,WorkerError>{let steps=args.steps.max(1);let per=Duration::from_millis(args.milliseconds/u64::from(steps));for step in 0..steps{tokio::select!{()=context.cancelled()=>return Err(WorkerError::new("cancelled","invocation was cancelled")),()=tokio::time::sleep(per)=>{}}context.progress(Some(f64::from(step+1)/f64::from(steps)),Some(format!("step {}/{}",step+1,steps)))?;}Ok(InvocationResult::success(serde_json::json!({"result":args.result,"process_id":std::process::id()})))}
+#[async_trait]
+impl AsyncWorkerHandler for DemoHandler {
+    async fn invoke(
+        &self,
+        context: InvocationContext,
+        request: InvokeRequest,
+    ) -> Result<InvocationResult, WorkerError> {
+        let args = request
+            .args
+            .into_iter()
+            .map(|a| {
+                a.into_os()
+                    .map_err(|e| WorkerError::new("argv", e.to_string()))
+            })
+            .collect::<Result<Vec<OsString>, WorkerError>>()?;
+        let mut argv = vec![
+            OsString::from("demo-engine"),
+            OsString::from(&request.command),
+        ];
+        argv.extend(args);
+        let cli =
+            EngineCli::try_parse_from(argv).map_err(|e| WorkerError::new("clap", e.to_string()))?;
+        match cli.command {
+            EngineCommand::Echo(a) => worker_echo(&context, &a),
+            EngineCommand::Delay(a) => worker_delay(context, a).await,
+        }
+    }
+}
+fn worker_echo(
+    context: &InvocationContext,
+    args: &EchoArgs,
+) -> Result<InvocationResult, WorkerError> {
+    context.progress(Some(0.5), Some("echoing".into()))?;
+    let result = run_echo(args);
+    context.output(Payload::Json(
+        serde_json::to_value(&result).map_err(|e| WorkerError::new("json", e.to_string()))?,
+    ))?;
+    context.progress(Some(1.0), Some("complete".into()))?;
+    Ok(InvocationResult::success(
+        serde_json::to_value(result).map_err(|e| WorkerError::new("json", e.to_string()))?,
+    ))
+}
+async fn worker_delay(
+    context: InvocationContext,
+    args: DelayArgs,
+) -> Result<InvocationResult, WorkerError> {
+    let steps = args.steps.max(1);
+    let per = Duration::from_millis(args.milliseconds / u64::from(steps));
+    for step in 0..steps {
+        tokio::select! {()=context.cancelled()=>return Err(WorkerError::new("cancelled","invocation was cancelled")),()=tokio::time::sleep(per)=>{}}
+        context.progress(
+            Some(f64::from(step + 1) / f64::from(steps)),
+            Some(format!("step {}/{}", step + 1, steps)),
+        )?;
+    }
+    Ok(InvocationResult::success(
+        serde_json::json!({"result":args.result,"process_id":std::process::id()}),
+    ))
+}

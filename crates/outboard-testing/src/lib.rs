@@ -6,8 +6,8 @@ use std::{
 };
 
 use outboard::{
-    run_capture_args, DoctorCheck, DoctorReport, DoctorStatus, ExecutionMode,
-    InterfaceRequirement, Manifest, PluginCandidate, PluginId, ResolvedPlugin, WorkerClient,
+    DoctorCheck, DoctorReport, DoctorStatus, ExecutionMode, InterfaceRequirement, Manifest,
+    PluginCandidate, PluginId, ResolvedPlugin, WorkerClient, run_capture_args,
 };
 use semver::VersionReq;
 use serde::{Deserialize, Serialize};
@@ -103,10 +103,7 @@ impl ConformanceReport {
             "Outboard conformance failed:\n{}",
             self.checks
                 .iter()
-                .map(|check| format!(
-                    "{:?} {}: {}",
-                    check.status, check.name, check.message
-                ))
+                .map(|check| format!("{:?} {}: {}", check.status, check.name, check.message))
                 .collect::<Vec<_>>()
                 .join("\n")
         );
@@ -121,10 +118,7 @@ pub enum ConformanceError {
     Identifier(#[from] outboard::IdentifierError),
 }
 
-pub fn check_plugin(
-    path: impl AsRef<Path>,
-    options: &ConformanceOptions,
-) -> ConformanceReport {
+pub fn check_plugin(path: impl AsRef<Path>, options: &ConformanceOptions) -> ConformanceReport {
     let path = path.as_ref().to_path_buf();
     let mut checks = Vec::new();
 
@@ -144,12 +138,7 @@ pub fn check_plugin(
         path.display().to_string(),
     ));
 
-    let output = match run_capture_args(
-        &path,
-        ["__outboard", "manifest"],
-        None,
-        options.timeout,
-    ) {
+    let output = match run_capture_args(&path, ["__outboard", "manifest"], None, options.timeout) {
         Ok(output) => output,
         Err(error) => {
             checks.push(DoctorCheck::fail("control.manifest", error.to_string()));
@@ -254,15 +243,9 @@ pub fn check_plugin(
                 options.timeout,
             ) {
                 Ok(mut worker) => {
-                    checks.push(DoctorCheck::pass(
-                        "worker.handshake",
-                        "handshake succeeded",
-                    ));
+                    checks.push(DoctorCheck::pass("worker.handshake", "handshake succeeded"));
                     match worker.ping(0xBADF00D) {
-                        Ok(()) => checks.push(DoctorCheck::pass(
-                            "worker.ping",
-                            "pong received",
-                        )),
+                        Ok(()) => checks.push(DoctorCheck::pass("worker.ping", "pong received")),
                         Err(error) => {
                             checks.push(DoctorCheck::fail("worker.ping", error.to_string()));
                         }
@@ -272,10 +255,9 @@ pub fn check_plugin(
                             "worker.shutdown",
                             "acknowledged and exited",
                         )),
-                        Err(error) => checks.push(DoctorCheck::fail(
-                            "worker.shutdown",
-                            error.to_string(),
-                        )),
+                        Err(error) => {
+                            checks.push(DoctorCheck::fail("worker.shutdown", error.to_string()))
+                        }
                     }
                 }
                 Err(error) => {
@@ -320,10 +302,9 @@ fn check_doctor(
                     "control.doctor",
                     format!("plugin doctor reported {:?}", report.status),
                 )),
-                Err(error) => checks.push(DoctorCheck::fail(
-                    "control.doctor.json",
-                    error.to_string(),
-                )),
+                Err(error) => {
+                    checks.push(DoctorCheck::fail("control.doctor.json", error.to_string()))
+                }
             }
         }
         Ok(output) => checks.push(DoctorCheck::fail(
@@ -380,10 +361,7 @@ fn check_cli_schema(
                 String::from_utf8_lossy(&output.stderr)
             ),
         )),
-        Err(error) => checks.push(DoctorCheck::fail(
-            "control.cli-schema",
-            error.to_string(),
-        )),
+        Err(error) => checks.push(DoctorCheck::fail("control.cli-schema", error.to_string())),
     }
 }
 

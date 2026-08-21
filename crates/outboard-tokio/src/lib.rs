@@ -4,28 +4,28 @@ use std::{
     collections::{BTreeMap, HashMap},
     ffi::OsString,
     sync::{
-        atomic::{AtomicU64, Ordering},
         Arc,
+        atomic::{AtomicU64, Ordering},
     },
     time::Duration,
 };
 
 use async_trait::async_trait;
 use outboard::{
-    ExecutionMode, InterfaceId, InterfaceRequirement, Manifest, ResolvedPlugin,
-    DEFAULT_CONTROL_TIMEOUT, OUTBOARD_FRAMEWORK_VERSION, OUTBOARD_PROTOCOL_VERSION,
+    DEFAULT_CONTROL_TIMEOUT, ExecutionMode, InterfaceId, InterfaceRequirement, Manifest,
+    OUTBOARD_FRAMEWORK_VERSION, OUTBOARD_PROTOCOL_VERSION, ResolvedPlugin,
 };
 use outboard_protocol::{
     DEFAULT_MAX_FRAME_SIZE, FrameError, HostFrame, HostHello, InvocationResult, InvokeRequest,
     Payload, PluginFrame, PluginHello, RequestId, WireOsString, WorkerError,
 };
 use semver::Version;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use thiserror::Error;
 use tokio::{
     io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, BufReader, BufWriter},
     process::{Child, ChildStdin, Command},
-    sync::{mpsc, Mutex},
+    sync::{Mutex, mpsc},
     task::{JoinHandle, JoinSet},
 };
 use tokio_util::sync::CancellationToken;
@@ -158,12 +158,8 @@ impl WorkerClient {
         plugin: &ResolvedPlugin,
         requested_interfaces: Vec<InterfaceRequirement>,
     ) -> Result<Self, WorkerClientError> {
-        Self::spawn_with_interfaces_timeout(
-            plugin,
-            requested_interfaces,
-            DEFAULT_CONTROL_TIMEOUT,
-        )
-        .await
+        Self::spawn_with_interfaces_timeout(plugin, requested_interfaces, DEFAULT_CONTROL_TIMEOUT)
+            .await
     }
 
     pub async fn spawn_with_interfaces_timeout(
@@ -184,8 +180,14 @@ impl WorkerClient {
             .stderr(std::process::Stdio::inherit())
             .kill_on_drop(true);
         let mut child = command.spawn().map_err(WorkerClientError::Spawn)?;
-        let stdin = child.stdin.take().expect("worker stdin was configured as piped");
-        let stdout = child.stdout.take().expect("worker stdout was configured as piped");
+        let stdin = child
+            .stdin
+            .take()
+            .expect("worker stdin was configured as piped");
+        let stdout = child
+            .stdout
+            .take()
+            .expect("worker stdout was configured as piped");
         let mut writer = AsyncFramedWriter::new(BufWriter::new(stdin));
         let mut reader = AsyncFramedReader::new(BufReader::new(stdout));
 
