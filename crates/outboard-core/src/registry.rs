@@ -121,7 +121,7 @@ impl Registry {
         let n = Namespace::new(namespace.as_ref())?;
         let env = format!(
             "{}_PLUGIN_PATH",
-            n.as_str().replace('-', '_').to_ascii_uppercase()
+            n.as_str().replace('-', "_").to_ascii_uppercase()
         );
         Ok(RegistryBuilder {
             namespace: n,

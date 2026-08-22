@@ -91,7 +91,9 @@ impl Default for ControlCapabilities {
 pub struct Manifest {
     pub manifest_version: u32,
     pub plugin: PluginMetadata,
+    #[schemars(with = "String")]
     pub framework: VersionReq,
+    #[schemars(with = "String")]
     pub worker_protocol: VersionReq,
     #[serde(default)]
     pub interfaces: Vec<InterfaceManifest>,
@@ -307,6 +309,7 @@ impl ManifestBuilder {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct InterfaceRequirement {
     pub id: InterfaceId,
+    #[schemars(with = "String")]
     pub version: VersionReq,
 }
 impl InterfaceRequirement {
@@ -321,6 +324,7 @@ impl InterfaceRequirement {
 pub struct CapabilityRequirement {
     pub id: CapabilityId,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schemars(with = "Option<String>")]
     pub version: Option<VersionReq>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub properties: BTreeMap<String, Value>,
